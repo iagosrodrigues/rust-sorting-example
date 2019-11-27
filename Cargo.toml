@@ -1,0 +1,5 @@
+[package]
+name = "sorting"
+version = "0.1.0"
+authors = ["iago"]
+edition = "2018"

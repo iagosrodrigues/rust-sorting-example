@@ -52,26 +52,17 @@ fn heap_sort<T>(list: &mut [T])
 where
     T: PartialOrd,
 {
-    let max_heap = |clone: &mut [T], size: usize| {
-        let mut count = (size as f32).log2().ceil() as i32;
-        let mut indice: usize;
-        while count >= 0 {
-            let count_usize = count as usize;
-            indice = (2 * count) as usize;
-            if indice < size && clone[indice + 1] > clone[count_usize] {
-                clone.swap(count_usize, indice + 1);
+    for count in (1..list.len()).rev() {
+        for root_index in (0..=(count as f32).log2().ceil() as usize).rev() {
+            let indice = 2 * root_index;
+            if indice < count && list[indice + 1] > list[indice] {
+                list.swap(indice, indice + 1);
             }
 
-            if indice + 2 <= size && clone[indice + 2] > clone[count_usize] {
-                clone.swap(count_usize, indice + 2);
+            if indice + 2 <= count && list[indice + 2] > list[indice] {
+                list.swap(indice, indice + 2);
             }
-
-            count -= 1;
         }
-    };
-
-    for count in (0..list.len()).rev() {
-        max_heap(list, count);
         list.swap(0, count);
     }
 }

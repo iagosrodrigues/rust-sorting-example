@@ -3,49 +3,56 @@ use std::io::Error;
 fn main() -> Result<(), Error> {
     let numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
     println!("Array: {:?}, size: {}", &numbers, numbers.len());
-    println!("CS: {:?}", counting_sort(&numbers));
-    println!("SS: {:?}", selection_sort(&numbers));
-    println!("BS: {:?}", bubble_sort(&numbers));
-    println!("HS: {:?}", heap_sort(&numbers));
-    println!("QS: {:?}", quick_sort(&numbers)?);
+    println!("CS: {:?}", counting_sort(&mut numbers.clone()));
+
+    let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
+    selection_sort(&mut numbers);
+    println!("SS: {:?}", numbers);
+
+    let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
+    bubble_sort(&mut numbers);
+    println!("BS: {:?}", numbers);
+
+    let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
+    heap_sort(&mut numbers);
+    println!("HS: {:?}", numbers);
+
+    let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
+    quick_sort(&mut numbers);
+    println!("QS: {:?}", numbers);
 
     Ok(())
 }
 
-fn selection_sort<T>(numbers: &[T]) -> Vec<T> where T: Ord + Clone {
-    let mut clone = Vec::from(numbers);
-
-    for key in 0..clone.len() {
-        if let Some((smaller, _)) = clone.iter().enumerate().skip(key).min_by_key(|x| x.1) {
-            clone.swap(key, smaller);
+fn selection_sort<T>(list: &mut [T])
+where
+    T: Ord,
+{
+    for key in 0..list.len() {
+        if let Some((smaller, _)) = list.iter().enumerate().skip(key).min_by_key(|x| x.1) {
+            list.swap(key, smaller);
         }
     }
-
-    clone
 }
 
-fn bubble_sort(numbers: &[i32]) -> Vec<i32> {
-    let mut clone = Vec::from(numbers);
-    let mut end = clone.len();
-
-    while end != 0 {
+fn bubble_sort<T>(list: &mut [T])
+where
+    T: PartialOrd,
+{
+    for end in (1..list.len()).rev() {
         for number in 0..end - 1 {
-            if clone[number] > clone[number + 1] {
-                clone[number] ^= clone[number + 1];
-                clone[number + 1] ^= clone[number];
-                clone[number] ^= clone[number + 1];
+            if list[number] > list[number + 1] {
+                list.swap(number, number + 1);
             }
         }
-
-        end -= 1;
     }
-
-    clone
 }
 
-fn heap_sort(numbers: &[i32]) -> Vec<i32> {
-    let mut clone = numbers.to_owned();
-    let max_heap = |clone: &mut [i32], size: usize| {
+fn heap_sort<T>(list: &mut [T])
+where
+    T: PartialOrd,
+{
+    let max_heap = |clone: &mut [T], size: usize| {
         let mut count = (size as f32).log2().ceil() as i32;
         let mut indice: usize;
         while count >= 0 {
@@ -63,12 +70,10 @@ fn heap_sort(numbers: &[i32]) -> Vec<i32> {
         }
     };
 
-    for count in (0..numbers.len()).rev() {
-        max_heap(&mut clone, count);
-        clone.swap(0, count);
+    for count in (0..list.len()).rev() {
+        max_heap(list, count);
+        list.swap(0, count);
     }
-
-    clone
 }
 
 fn quick_sort_recursive(numbers: &mut [i32], begin: usize, end: usize) {
@@ -100,39 +105,31 @@ fn quick_sort_recursive(numbers: &mut [i32], begin: usize, end: usize) {
     }
 }
 
-fn quick_sort(numbers: &[i32]) -> Result<Vec<i32>, Error> {
-    let mut clone = numbers.to_owned();
-
-    quick_sort_recursive(&mut clone, 0, numbers.len() - 1);
-
-    Ok(clone)
+fn quick_sort(list: &mut [i32]) {
+    quick_sort_recursive(list, 0, list.len() - 1);
 }
 
-fn counting_sort(list: &[i32]) -> Vec<i32> {
-    let maximum_value: usize = *list
-        .iter()
-        .max()
-        .expect("Não foi possível determinar o valor máximo")
-        as usize;
-    let mut counting_vector = vec![0; maximum_value];
-    let mut output = vec![0; list.len()];
+fn counting_sort(list: &mut [i32]) -> Vec<i32> {
+    let mut output = list.to_owned();
+    if let Some(&max_value) = list.iter().max() {
+        let mut counting = list
+            .iter()
+            .fold(&mut vec![0; max_value as usize], |arr, &el| {
+                arr[el as usize - 1] += 1;
+                arr
+            })
+            .iter()
+            .scan(0, |state, number| {
+                *state += *number;
+                Some(*state)
+            })
+            .collect::<Vec<usize>>();
 
-    list.iter()
-        .for_each(|&number| counting_vector[number as usize - 1] += 1);
+        list.iter().for_each(|&number| {
+            output[counting[number as usize - 1] as usize - 1] = number;
+            counting[number as usize - 1] -= 1;
+        });
+    }
 
-    counting_vector = counting_vector
-        .iter()
-        .scan(0, |state, &number| {
-            *state += number;
-            Some(*state)
-        })
-        .collect();
-
-    list.iter().for_each(|&number| {
-        let pos = number as usize - 1;
-        output[counting_vector[pos] as usize - 1] = number;
-        counting_vector[pos] -= 1;
-    });
-
-    output
+    output.to_vec()
 }

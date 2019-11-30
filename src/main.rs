@@ -1,9 +1,9 @@
-use std::io::Error;
+use std::convert::TryInto;
 
-fn main() -> Result<(), Error> {
-    let numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
-    println!("Array: {:?}, size: {}", &numbers, numbers.len());
-    println!("CS: {:?}", counting_sort(&mut numbers.clone()));
+fn main() {
+    let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
+    counting_sort(&mut numbers);
+    println!("CS: {:?}", numbers);
 
     let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
     selection_sort(&mut numbers);
@@ -20,8 +20,6 @@ fn main() -> Result<(), Error> {
     let mut numbers = vec![5, 8, 1, 2, 7, 3, 6, 9, 4, 10];
     quick_sort(&mut numbers);
     println!("QS: {:?}", numbers);
-
-    Ok(())
 }
 
 fn selection_sort<T>(list: &mut [T])
@@ -59,7 +57,7 @@ where
                 list.swap(indice, indice + 1);
             }
 
-            if indice + 2 <= count && list[indice + 2] > list[indice] {
+            if indice + 1 < count && list[indice + 2] > list[indice] {
                 list.swap(indice, indice + 2);
             }
         }
@@ -100,15 +98,22 @@ fn quick_sort(list: &mut [i32]) {
     quick_sort_recursive(list, 0, list.len() - 1);
 }
 
-fn counting_sort(list: &mut [i32]) -> Vec<i32> {
-    let mut output = list.to_owned();
+fn counting_sort<T>(list: &mut [T])
+where
+    T: Ord + Copy + TryInto<usize>,
+{
+    let output = list.to_owned();
+
     if let Some(&max_value) = list.iter().max() {
         let mut counting = list
             .iter()
-            .fold(&mut vec![0; max_value as usize], |arr, &el| {
-                arr[el as usize - 1] += 1;
-                arr
-            })
+            .fold(
+                &mut vec![0; max_value.try_into().unwrap_or_default()],
+                |array, &el: &T| {
+                    array[el.try_into().unwrap_or_default() - 1] += 1;
+                    array
+                },
+            )
             .iter()
             .scan(0, |state, number| {
                 *state += *number;
@@ -116,11 +121,9 @@ fn counting_sort(list: &mut [i32]) -> Vec<i32> {
             })
             .collect::<Vec<usize>>();
 
-        list.iter().for_each(|&number| {
-            output[counting[number as usize - 1] as usize - 1] = number;
-            counting[number as usize - 1] -= 1;
-        });
+        output.iter().for_each(|&number| {
+            list[counting[number.try_into().unwrap_or_default() - 1] - 1] = number;
+            counting[number.try_into().unwrap_or_default() - 1] -= 1;
+        })
     }
-
-    output.to_vec()
 }
